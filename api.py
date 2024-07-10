@@ -17,7 +17,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.get("/get-my-tasks/{device_id}")
-@limiter.limit("1/5minute")
+@limiter.limit("30/minute")
 async def get_my_tasks(request: Request, device_id: int = Path(..., description="The device ID")):
     # Check if device_id exists in devices table
     cursor.execute("SELECT id FROM devices WHERE id = ?", (device_id,))
@@ -30,7 +30,7 @@ async def get_my_tasks(request: Request, device_id: int = Path(..., description=
         UPDATE jobs
         SET device_id = ?
         WHERE device_id IS NULL
-        LIMIT 1000
+        LIMIT 50
     """, (device_id,))
     conn.commit()
 
@@ -38,6 +38,7 @@ async def get_my_tasks(request: Request, device_id: int = Path(..., description=
     cursor.execute("""
         SELECT * FROM jobs
         WHERE device_id = ? AND is_task_complete = FALSE
+        LIMIT 50
     """, (device_id,))
     tasks = cursor.fetchall()
 
@@ -53,7 +54,7 @@ class TaskResult(BaseModel):
 
 
 @app.post("/submit-results/{device_id}")
-@limiter.limit("1/minute")
+@limiter.limit("100/minute")
 async def submit_results(device_id: int, results: list[TaskResult], request: Request):
     # Check if device_id exists in devices table
     cursor.execute("SELECT id FROM devices WHERE id = ?", (device_id,))

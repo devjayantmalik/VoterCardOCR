@@ -1,0 +1,1 @@
+pyinstaller --add-data ".venv/lib/python3.10/site-packages/pypdfium2_raw/libpdfium.so:pypdfium2_raw" --add-data ".venv/lib/python3.10/site-packages/pypdfium2_raw/version.json:pypdfium2_raw" --add-data ".venv/lib/python3.10/site-packages/pypdfium2/version.json:pypdfium2" main.py

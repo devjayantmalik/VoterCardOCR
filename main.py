@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from doctr.models import ocr_predictor
+import torch
 
 
 class ExtractBoxes:
@@ -125,20 +126,39 @@ if __name__ == '__main__':
                             box_min_height=50,
                             box_max_width=600,
                             box_max_height=600)
+
     import time
-    model = ocr_predictor('db_resnet50', 'parseq', pretrained=True)
-    for i, cropped in enumerate(detector.detect(pil_picture=picture)):
-        cropped = Image.fromarray(cropped)
+
+    # load model
+    model = ocr_predictor('db_resnet50', 'parseq',
+                          pretrained=True).cuda() if torch.cuda.is_available() else ocr_predictor('db_resnet50',
+                                                                                                  'parseq',
+                                                                                                  pretrained=True)
+
+    def clean_and_preprocess(box: np.ndarray):
+        cropped = Image.fromarray(box)
         cropped = cropped.resize((cropped.size[0] * 4, cropped.size[1] * 4))
         cropped = cropped.crop((cropped.width / 2, 0, cropped.width, 140))
         cropped = cropped.convert("RGB")
+        return np.asarray(cropped)
 
-        start = time.time()
-        out = model([np.asarray(cropped)])
-        print(f"Model Prediction in {time.time() - start} seconds")
-        data = [(word.value, word.confidence) for line in out.pages[0].blocks[0].lines for word in line.words]
-        cropped.save(f"pics/{i}__{data[0][0].replace('/', '_')}.png")
-        print(data)
+    # Crop all voter card numbers from slips
+    start = time.time()
+    card_nos = [clean_and_preprocess(pic) for pic in detector.detect(pil_picture=picture)]
+    print(f"Clean and Preprocess completed in {time.time() - start} seconds")
+
+    start = time.time()
+    predictions = model(card_nos)
+    print(f"Prediction of {len(card_nos)} items completed in {time.time() - start} seconds")
+    print(predictions.export())
+
+    # for i, cropped in enumerate():
+    #     start = time.time()
+    #     out = model([])
+    #     print(f"Model Prediction in {time.time() - start} seconds")
+    #     data = [(word.value, word.confidence) for line in out.pages[0].blocks[0].lines for word in line.words]
+    #     cropped.save(f"pics/{i}__{data[0][0].replace('/', '_')}.png")
+    #     print(data)
 
         # cropped = cv2.resize(cropped, (cropped.shape[1] * 4, cropped.shape[0] * 4))
         # cv2.imwrite("cropped.png", cropped)

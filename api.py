@@ -20,7 +20,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 @limiter.limit("30/minute")
 async def get_my_tasks(request: Request, device_id: int = Path(..., description="The device ID")):
     # Check if device_id exists in devices table
-    cursor.execute("SELECT id FROM devices WHERE id = ?", (device_id,))
+    cursor.execute("SELECT id, batch_size FROM devices WHERE id = ?", (device_id,))
     device = cursor.fetchone()
     if not device:
         return []  # Device not found, return empty list as response
@@ -30,16 +30,16 @@ async def get_my_tasks(request: Request, device_id: int = Path(..., description=
         UPDATE jobs
         SET device_id = ?
         WHERE device_id IS NULL
-        LIMIT 50
-    """, (device_id,))
+        LIMIT ?
+    """, (device_id, device[1]))
     conn.commit()
 
     # Fetch tasks for the device where is_task_complete is False
     cursor.execute("""
         SELECT * FROM jobs
         WHERE device_id = ? AND is_task_complete = FALSE
-        LIMIT 50
-    """, (device_id,))
+        LIMIT ?
+    """, (device_id,device[1]))
     tasks = cursor.fetchall()
 
     return tasks

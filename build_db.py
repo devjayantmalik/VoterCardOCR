@@ -131,7 +131,8 @@ def create_db():
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS devices (
         id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL UNIQUE
+        name TEXT NOT NULL UNIQUE,
+        batch_size INTEGER DEFAULT 50
     )
     ''')
 
@@ -187,6 +188,7 @@ def clean_and_preprocess(box: np.ndarray):
 
 def process_pdf(filepath: str):
     try:
+        pst = time.time()
         data = []
         filename = os.path.basename(filepath)
         pages = list(read_doc_pages(filepath))
@@ -199,7 +201,11 @@ def process_pdf(filepath: str):
 
             # prepare data for insertion in db
             data += [(filename, card, f'{filename}_{page_no}_{idx}') for idx, card in enumerate(card_nos)]
-
+        
+        global processed_files
+        global total_files
+        processed_files += 1
+        print(f"Processed ({processed_files}/{total_files}) :{filepath} in {time.time() - pst} seconds")
         # Return query and associated data
         data_insert_query = '''INSERT OR IGNORE INTO jobs (pdf_filename,picture_base64, uid) VALUES (?, ?, ?);'''
         return data_insert_query, data
@@ -207,7 +213,8 @@ def process_pdf(filepath: str):
         print(f"Error {ex}")
         return None, None
 
-
+total_files = 0
+processed_files = 0
 detector = ExtractBoxes(box_min_width=295,
                         box_min_height=120,
                         box_max_width=600,
@@ -220,7 +227,8 @@ if __name__ == '__main__':
     files_path = os.path.join("data", "documents")
 
     files = [os.path.join(files_path, filename) for filename in os.listdir(files_path)]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
+    total_files = len(files)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
         results = executor.map(process_pdf, files)
         for q, data in results:
             conn.executemany(q, data)

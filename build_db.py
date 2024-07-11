@@ -234,11 +234,11 @@ if __name__ == '__main__':
             future = executor.submit(process_pdf, file)
             futures.append(future)
         
-    for future in concurrent.futures.as_completed(futures):
-        try:
-            q, data = future.result()
-            conn.executemany(q, data)
-            conn.commit()
-        except Exception as ex:
-            print(ex)
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                q, data = future.result()
+                conn.executemany(q, data)
+                conn.commit()
+            except Exception as ex:
+                print(ex)
     print(f"All pdfs processed in {time.time() - start} seconds")

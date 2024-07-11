@@ -186,7 +186,7 @@ def clean_and_preprocess(box: np.ndarray):
     return base64.b64encode(buffered.getvalue())
 
 
-def process_pdf(filepath: str):
+def process_pdf(filepath: str, index: int):
     try:
         pst = time.time()
         data = []
@@ -208,10 +208,10 @@ def process_pdf(filepath: str):
         print(f"Processed ({processed_files}/{total_files}) :{filepath} in {time.time() - pst} seconds")
         # Return query and associated data
         data_insert_query = '''INSERT OR IGNORE INTO jobs (pdf_filename,picture_base64, uid) VALUES (?, ?, ?);'''
-        return data_insert_query, data
+        return data_insert_query, data, index
     except Exception as ex:
         print(f"Error {ex}")
-        return None, None
+        return None, None, None
 
 total_files = 0
 processed_files = 0
@@ -228,17 +228,18 @@ if __name__ == '__main__':
 
     files = [os.path.join(files_path, filename) for filename in os.listdir(files_path)]
     total_files = len(files)
-    futures = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-        for file in files:
-            future = executor.submit(process_pdf, file)
+        futures = []
+        for index, file in enumerate(files):
+            future = executor.submit(process_pdf, file, index)
             futures.append(future)
         
         for future in concurrent.futures.as_completed(futures):
             try:
-                q, data = future.result()
+                q, data, index = future.result()
                 conn.executemany(q, data)
                 conn.commit()
+                futures[index] = None
             except Exception as ex:
                 print(ex)
     print(f"All pdfs processed in {time.time() - start} seconds")

@@ -228,9 +228,13 @@ if __name__ == '__main__':
 
     files = [os.path.join(files_path, filename) for filename in os.listdir(files_path)]
     total_files = len(files)
+    futures = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-        results = executor.map(process_pdf, files)
-        for q, data in results:
+        future = executor.submit(process_pdf, files)
+        futures.append(future)
+        
+        for future in concurrent.futures.as_completed(futures):
+            q, data = future.result()
             conn.executemany(q, data)
             conn.commit()
     print(f"All pdfs processed in {time.time() - start} seconds")

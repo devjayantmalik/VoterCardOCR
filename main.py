@@ -31,13 +31,21 @@ def fetch_results_from_api(device_id):
 
 
 def parse_model_output(output):
-    words = output.blocks[0].lines[0].words
+    lines = output.blocks[0].lines if len(output.blocks >= 1) else []
+    words = lines[0].words if len(lines >= 1) else []
 
-    prediction = words[0].value.strip()
+    prediction = words[0].value.strip() if len(words >= 1) else ''
     export = json.dumps(output.export())
-    confidence = words[0].confidence if (len(words) == 1) else 0
-    errors = "More than 1 word found" if (len(words) > 1) else "Length neither 10 nor 16" if (
-            len(prediction) != 10 or len(prediction) != 16) else ""
+    confidence = words[0].confidence if (len(words) >= 1) else 0
+    
+    errors = ""
+    if len(words) > 1:
+        errors = "More than 1 word found"
+    elif len(words) == 0:
+        errors = "No words found"
+    elif len(prediction) != 10 or len(prediction) != 16:
+        errors = "Length neither 10 nor 16"
+        
     return prediction, export, confidence, errors
 
 

@@ -22,16 +22,21 @@ async def get_my_tasks(request: Request, device_id: int = Path(..., description=
     # Check if device_id exists in devices table
     cursor.execute("SELECT id, batch_size FROM devices WHERE id = ?", (device_id,))
     device = cursor.fetchone()
+    batch_size = int(device[1])
     if not device:
         return []  # Device not found, return empty list as response
-
+    
     # Assign device_id to up to 1000 rows in jobs table where device_id is NULL
     cursor.execute("""
-        UPDATE jobs
+       UPDATE jobs
         SET device_id = ?
-        WHERE device_id IS NULL
-        LIMIT ?
-    """, (device_id, device[1]))
+        WHERE rowid IN (
+            SELECT id
+            FROM jobs
+            WHERE device_id IS NULL
+            LIMIT ?
+        )
+    """, (int(device_id), batch_size))
     conn.commit()
 
     # Fetch tasks for the device where is_task_complete is False
@@ -39,7 +44,7 @@ async def get_my_tasks(request: Request, device_id: int = Path(..., description=
         SELECT * FROM jobs
         WHERE device_id = ? AND is_task_complete = FALSE
         LIMIT ?
-    """, (device_id,device[1]))
+    """, (device_id,batch_size))
     tasks = cursor.fetchall()
 
     return tasks

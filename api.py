@@ -17,7 +17,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.get("/get-my-tasks/{device_id}")
-@limiter.limit("30/minute")
+@limiter.limit("60/minute")
 async def get_my_tasks(request: Request, device_id: int = Path(..., description="The device ID")):
     # Check if device_id exists in devices table
     cursor.execute("SELECT id, batch_size FROM devices WHERE id = ?", (device_id,))

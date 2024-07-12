@@ -16,8 +16,11 @@ import json
 from nanoid import generate
 
 
+BASE_IP = "172.30.1.132:8000"
+
+
 def fetch_results_from_api(device_id):
-    api_url = f"http://172.30.1.132:8000/get-my-tasks/{device_id}"  # Replace with your actual API URL
+    api_url = f"http://{BASE_IP}/get-my-tasks/{device_id}"  # Replace with your actual API URL
     headers = {'Content-Type': 'application/json'}
 
     try:
@@ -50,7 +53,7 @@ def parse_model_output(output):
 
 
 def post_api_data_to_server(device_id: int, data):
-    api_url = f"http://localhost:8000/submit-results/{device_id}"  # Replace with your actual API URL
+    api_url = f"http://{BASE_IP}/submit-results/{device_id}"  # Replace with your actual API URL
     headers = {
         'Content-Type': 'application/json',
         # Add any additional headers if needed

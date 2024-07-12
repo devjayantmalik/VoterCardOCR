@@ -32,11 +32,11 @@ def fetch_results_from_api(device_id):
 
 def parse_model_output(output):
     lines = output.blocks[0].lines if len(output.blocks >= 1) else []
-    words = lines[0].words if len(lines >= 1) else []
+    words = lines[0].words if len(lines) >= 1 else []
 
-    prediction = words[0].value.strip() if len(words >= 1) else ''
+    prediction = words[0].value.strip() if len(words) >= 1 else ''
     export = json.dumps(output.export())
-    confidence = words[0].confidence if (len(words) >= 1) else 0
+    confidence = words[0].confidence if len(words) >= 1 else 0
     
     errors = ""
     if len(words) > 1:

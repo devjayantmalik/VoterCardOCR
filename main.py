@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from doctr.models import ocr_predictor
-from doctr.io import Document 
+from doctr.io import Document
 import torch
 
 import requests
@@ -15,9 +15,9 @@ import io
 import json
 from nanoid import generate
 
-
 BASE_IP = "172.30.1.132:8000"
 os.environ["USE_TORCH"] = '1'
+
 
 def fetch_results_from_api(device_id):
     api_url = f"http://{BASE_IP}/get-my-tasks/{device_id}"  # Replace with your actual API URL
@@ -30,7 +30,7 @@ def fetch_results_from_api(device_id):
         return tasks
     except requests.exceptions.RequestException as e:
         print(f"Error fetching data from API: {e}")
-        return [] 
+        return []
 
 
 def parse_model_output(output):
@@ -40,15 +40,15 @@ def parse_model_output(output):
     prediction = words[0].value.strip() if len(words) >= 1 else ''
     export = json.dumps(output.export())
     confidence = words[0].confidence if len(words) >= 1 else 0
-    
+
     errors = ""
     if len(words) > 1:
         errors = "More than 1 word found"
     elif len(words) == 0:
         errors = "No words found"
-    elif len(prediction) != 10 or len(prediction) != 16:
+    elif not [10, 16].__contains__(len(prediction)):
         errors = "Length neither 10 nor 16"
-        
+
     return prediction, export, confidence, errors
 
 
@@ -82,7 +82,8 @@ if __name__ == '__main__':
     model = ocr_predictor('db_resnet50', 'parseq',
                           pretrained=True).cuda() if torch.cuda.is_available() else ocr_predictor('db_resnet50',
                                                                                                   'parseq',
-                                                                                                  pretrained=True).to(torch.device("cpu"))
+                                                                                                  pretrained=True).to(
+        torch.device("cpu"))
 
     # Regularly keep running and solving tasks
     while True:

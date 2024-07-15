@@ -17,7 +17,7 @@ from nanoid import generate
 
 
 BASE_IP = "172.30.1.132:8000"
-
+os.environ["USE_TORCH"] = '1'
 
 def fetch_results_from_api(device_id):
     api_url = f"http://{BASE_IP}/get-my-tasks/{device_id}"  # Replace with your actual API URL
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     model = ocr_predictor('db_resnet50', 'parseq',
                           pretrained=True).cuda() if torch.cuda.is_available() else ocr_predictor('db_resnet50',
                                                                                                   'parseq',
-                                                                                                  pretrained=True)
+                                                                                                  pretrained=True).to(torch.device("cpu"))
 
     # Regularly keep running and solving tasks
     while True:
